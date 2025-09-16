@@ -12,6 +12,12 @@ interface BorrowReturnProps {
 const BorrowReturn: React.FC<BorrowReturnProps> = ({ books, students, borrowingRecords, onBorrow, onReturn }) => {
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedStudent, setSelectedStudent] = useState('');
+  
+  const [bookSearchTerm, setBookSearchTerm] = useState('');
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [isBookDropdownOpen, setIsBookDropdownOpen] = useState(false);
+  const [isStudentDropdownOpen, setIsStudentDropdownOpen] = useState(false);
+
   const [borrowDurationOption, setBorrowDurationOption] = useState('14');
   const [customDuration, setCustomDuration] = useState('1');
   
@@ -40,6 +46,8 @@ const BorrowReturn: React.FC<BorrowReturnProps> = ({ books, students, borrowingR
       onBorrow(selectedBook, selectedStudent, duration);
       setSelectedBook('');
       setSelectedStudent('');
+      setBookSearchTerm('');
+      setStudentSearchTerm('');
       setBorrowDurationOption('14');
       setCustomDuration('1');
     } else {
@@ -75,6 +83,44 @@ const BorrowReturn: React.FC<BorrowReturnProps> = ({ books, students, borrowingR
   };
   
   const availableBooks = books.filter(book => book.quantity > 0);
+
+  const filteredAvailableBooks = useMemo(() => {
+    return availableBooks.filter(book =>
+      book.title.toLowerCase().includes(bookSearchTerm.toLowerCase()) ||
+      book.author.toLowerCase().includes(bookSearchTerm.toLowerCase())
+    );
+  }, [bookSearchTerm, availableBooks]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter(student =>
+      student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
+    );
+  }, [studentSearchTerm, students]);
+
+  const handleSelectBook = (book: Book) => {
+    setSelectedBook(book.id);
+    setBookSearchTerm(book.title);
+    setIsBookDropdownOpen(false);
+  };
+
+  const handleBookSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBookSearchTerm(e.target.value);
+    setSelectedBook(''); // Deselect if user types again
+    setIsBookDropdownOpen(true);
+  };
+  
+  const handleSelectStudent = (student: Student) => {
+    setSelectedStudent(student.id);
+    setStudentSearchTerm(student.name);
+    setIsStudentDropdownOpen(false);
+  };
+
+  const handleStudentSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStudentSearchTerm(e.target.value);
+    setSelectedStudent(''); // Deselect if user types again
+    setIsStudentDropdownOpen(true);
+  };
+
   const borrowedBooksDetails = borrowingRecords.map(record => {
     const book = books.find(b => b.id === record.bookId);
     const student = students.find(m => m.id === record.studentId);
@@ -91,28 +137,76 @@ const BorrowReturn: React.FC<BorrowReturnProps> = ({ books, students, borrowingR
           <h2 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Mượn sách</h2>
           <div className="space-y-4">
             <div>
-              <label htmlFor="book" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chọn sách</label>
-              <select 
-                id="book" 
-                value={selectedBook} 
-                onChange={e => setSelectedBook(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled>-- Sách có sẵn --</option>
-                {availableBooks.map(book => <option key={book.id} value={book.id}>{book.title}</option>)}
-              </select>
+              <label htmlFor="book-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chọn sách</label>
+              <div className="relative">
+                <input
+                  id="book-search"
+                  type="text"
+                  value={bookSearchTerm}
+                  onChange={handleBookSearchChange}
+                  onFocus={() => setIsBookDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsBookDropdownOpen(false), 200)}
+                  placeholder="Gõ để tìm sách theo tên hoặc tác giả..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoComplete="off"
+                />
+                {isBookDropdownOpen && (
+                  <ul className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg max-h-52 overflow-y-auto">
+                    {filteredAvailableBooks.length > 0 ? (
+                      filteredAvailableBooks.map(book => (
+                        <li
+                          key={book.id}
+                          onClick={() => handleSelectBook(book)}
+                          className="px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                        >
+                          <p className="font-semibold text-gray-800 dark:text-gray-100">{book.title}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{book.author}</p>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-2 text-gray-500 italic">
+                        {bookSearchTerm ? 'Không tìm thấy sách phù hợp.' : 'Gõ để bắt đầu tìm kiếm...'}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
             </div>
             <div>
-              <label htmlFor="student" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chọn học sinh</label>
-              <select 
-                id="student" 
-                value={selectedStudent}
-                onChange={e => setSelectedStudent(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled>-- Học sinh --</option>
-                {students.map(student => <option key={student.id} value={student.id}>{student.name}</option>)}
-              </select>
+              <label htmlFor="student-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chọn học sinh</label>
+              <div className="relative">
+                <input
+                  id="student-search"
+                  type="text"
+                  value={studentSearchTerm}
+                  onChange={handleStudentSearchChange}
+                  onFocus={() => setIsStudentDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsStudentDropdownOpen(false), 200)}
+                  placeholder="Gõ để tìm học sinh theo tên..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoComplete="off"
+                />
+                {isStudentDropdownOpen && (
+                  <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg max-h-52 overflow-y-auto">
+                    {filteredStudents.length > 0 ? (
+                      filteredStudents.map(student => (
+                        <li
+                          key={student.id}
+                          onClick={() => handleSelectStudent(student)}
+                          className="px-4 py-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                        >
+                          <p className="font-semibold text-gray-800 dark:text-gray-100">{student.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Lớp {student.className}</p>
+                        </li>
+                      ))
+                    ) : (
+                       <li className="px-4 py-2 text-gray-500 italic">
+                        {studentSearchTerm ? 'Không tìm thấy học sinh phù hợp.' : 'Gõ để bắt đầu tìm kiếm...'}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </div>
             </div>
             <div>
               <label htmlFor="duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thời gian mượn</label>
