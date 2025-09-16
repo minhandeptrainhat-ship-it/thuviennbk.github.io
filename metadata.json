@@ -1,0 +1,5 @@
+{
+  "name": "Thư Viện Thông Minh",
+  "description": "Một ứng dụng quản lý thư viện hiện đại, trực quan và mạnh mẽ được xây dựng bằng React và Tailwind CSS, tích hợp API Gemini để mang lại các tính năng thông minh.",
+  "requestFramePermissions": []
+}
