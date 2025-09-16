@@ -2,13 +2,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Student, Book } from '../types';
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Initialize the GoogleGenAI client directly with the API key from environment variables.
+// The check for the key's existence has been removed to prevent the app from crashing on load.
+// The SDK will handle errors if the key is missing when an API call is made.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const bookSchema = {
   type: Type.OBJECT,
